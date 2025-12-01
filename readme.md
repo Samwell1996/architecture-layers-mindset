@@ -91,10 +91,10 @@ Start here:
 Then go deeper:
 👉 `mobx-store-architecture.md`
 
-enforce patterns(store patterns):
+Enforce patterns — store-level rules:
 👉 `copilot-system-core.md`
 
-enforce patterns(app patterns):
+Enforce patterns — app-wide architectural rules:
 👉 `copilot-system-app.md`
 
 ---
