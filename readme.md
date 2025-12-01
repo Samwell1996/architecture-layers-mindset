@@ -91,8 +91,11 @@ Start here:
 Then go deeper:
 👉 `mobx-store-architecture.md`
 
-And enforce patterns:
-👉 `copilot-system.md`
+enforce patterns(store patterns):
+👉 `copilot-system-core.md`
+
+enforce patterns(app patterns):
+👉 `copilot-system-app.md`
 
 ---
 
