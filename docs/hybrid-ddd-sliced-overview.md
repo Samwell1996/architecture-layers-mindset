@@ -67,7 +67,52 @@ Contains **no business logic**.
 src/ui/
  ├── features/         ← feature-level UI logic + domain binding
  ├── widgets/          ← reusable medium UI blocks
- └── entities/         ← mapping domain models → UI props
+ └── entities/         ← pure presentational domain component
+```
+
+UI Layer Examples
+
+- src/ui/features/
+
+Feature-level UI logic + domain binding.
+A feature is a small functional unit that connects UI to the domain layer without putting business logic inside the component.
+
+Example: a button that triggers a domain action safely via a duck.
+
+```
+src/ui/features/follow-button/
+  ├── follow-button.tsx    ← UI + calls domain.store.follow.run()
+  └── index.ts
+```
+
+- src/ui/widgets/
+
+Reusable composite UI blocks that combine features + UI entities.
+Widgets may coordinate list rendering, layout, or small UI-only state (scroll, pressed), but never contain domain logic.
+
+Example: a Feed widget composed of PostCard + FollowButton.
+
+```
+// feed.tsx (conceptual)
+import { PostCard } from '@/ui/entities/post/post-card'
+import { FollowButton } from '@/ui/features/follow-button'
+```
+
+```
+src/ui/widgets/feed/
+  ├── feed.tsx          ← maps list.getList → PostCard[] + FollowButton
+  └── index.ts
+```
+
+- src/ui/entities/
+  Adapter layer that transforms domain models → UI props.
+  This ensures UI never consumes raw MobX models directly.
+
+Example: post-card pure presentational component
+
+```
+src/ui/entities/post/
+  └── post-card.tsx
 ```
 
 UI imports:
