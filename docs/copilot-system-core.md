@@ -24,6 +24,130 @@ Never suggest alternatives unless explicitly asked.
 
 ---
 
+## ENTITY_KEY Integrity Rule (CRITICAL)
+
+When a new `ENTITY_KEY` is added or modified, Copilot MUST verify that all required architecture nodes are updated.
+
+If a developer introduces or changes an `ENTITY_KEY`, they MUST also update these locations:
+
+1. **EntityMap** — The key must map to a valid `StoredEntity<Model>`.
+2. **schemaMap** — The key must map to a valid `EntitySchema`.
+3. **ENTITY_GC_CONFIG** — The key must define `ttl` and `max` values.
+4. **Domain Schema** — A corresponding `new EntitySchema(ENTITY_KEY.X, …)` MUST exist.
+
+If ANY of these nodes are missing, Copilot MUST comment:
+
+"New ENTITY_KEY <NAME> detected. Missing required architecture updates: [EntityMap / schemaMap / ENTITY_GC_CONFIG / EntitySchema]. Add these to maintain graph integrity and correct GC behavior."
+
+Copilot MUST treat missing nodes as an architecture violation and MUST NOT approve the change until all required updates are added.
+
+---
+
+# Persist Mutation Integrity Rule (CRITICAL)
+
+Ducks MUST NOT mutate **plain persisted fields** of Stores directly.
+
+This rule applies **only to observable plain values declared inside a Store**, such as:
+
+- booleans
+- numbers
+- strings
+- plain objects (POJOs)
+- nested POJOs
+- any field extracted by PersistExtractor
+
+Mutating these fields directly breaks snapshot diffing and restore behavior.
+Copilot MUST detect and block these violations.
+
+---
+
+## ❌ Forbidden (ONLY for plain store fields)
+
+- `this.viewer = res`
+- `this.isLoggedIn = true`
+- `this.filters.open = true`
+- `this.profile.name = "X"`
+- `Object.assign(this.settings, payload)`
+- `this.pagination.page++`
+- deep mutations: `this.user.meta.lastSeen = Date.now()`
+
+Copilot MUST warn whenever a duck performs _any_ direct assignment to a persisted Store field.
+
+---
+
+## ✅ Allowed — IGNORED by this rule (EntityCollection)
+
+Mutations of `EntityCollection` **must NOT trigger warnings**, including:
+
+- `this.list.set(res)`
+- `this.list.append(res)`
+- `this.list.prepend(res)`
+- `this.list.reset()`
+- `this.list.updateMeta(...)`
+- any collection metadata updates
+- `entities.merge(res)`
+- model hydration logic
+
+`EntityCollection` manages its own persistence and is fully safe.
+Copilot MUST NOT warn about operations on collections.
+
+---
+
+## 🚨 Copilot Required Behavior
+
+When Copilot detects mutation of a plain Store field inside a duck:
+
+> **Persist violation detected ❌ — Ducks cannot mutate persisted store fields directly.
+> Move this update into an explicit Store action and call that action from the duck.**
+
+---
+
+## 🔧 Required Rewrite Behavior
+
+### ❌ Wrong
+
+```
+fetchViewer = createDuck(async () => {
+  const res = await api.getViewer();
+  this.viewer = res; // ❌ persist violation
+});
+```
+
+### ✅ Correct
+
+```
+setViewer = (v) => {
+  this.viewer = v;
+};
+
+fetchViewer = createDuck(async () => {
+  const res = await api.getViewer();
+  this.setViewer(res); // ✅ allowed
+});
+```
+
+Copilot MUST auto-rewrite violating code to follow this pattern.
+
+---
+
+## 🛡 Persist Watch Points (Copilot MUST check)
+
+- duck `.run()` bodies
+- `await` continuations
+- store methods invoked by ducks
+- deep mutations of persisted POJOs
+- direct assignment to any observable plain field
+- replacing whole objects (`this.state = {...}`)
+
+---
+
+## FINAL RULE
+
+> **Copilot MUST warn ONLY for direct mutations of plain persisted Store fields.
+> Mutations of EntityCollection MUST be ignored — they are safe and part of public API.**
+
+---
+
 ## Concepts
 
 | Name             | Meaning                                  |
